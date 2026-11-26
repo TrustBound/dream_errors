@@ -1,4 +1,4 @@
-import dream_errors
+import dream_errors.{type Error, map_cause}
 import snippets/to_error.{type StoreError}
 
 /// The causes of the app: one variant for each package that the app uses.
@@ -8,8 +8,6 @@ pub type AppCause {
 }
 
 /// Puts a store error into the error type of the app.
-pub fn from_store(
-  error: dream_errors.Error(StoreError),
-) -> dream_errors.Error(AppCause) {
-  dream_errors.map_cause(error, Store)
+pub fn from_store(error: Error(StoreError)) -> Error(AppCause) {
+  map_cause(error, Store)
 }

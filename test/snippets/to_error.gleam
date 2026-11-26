@@ -1,4 +1,4 @@
-import dream_errors
+import dream_errors.{type Error, Conflict, NotFound, Unavailable}
 
 /// The error of a store package.
 pub type StoreError {
@@ -8,12 +8,10 @@ pub type StoreError {
 }
 
 /// Maps a store error to the shared error, with the store error as the cause.
-pub fn to_error(error: StoreError) -> dream_errors.Error(StoreError) {
+pub fn to_error(error: StoreError) -> Error(StoreError) {
   case error {
-    KeyMissing(key:) -> dream_errors.NotFound("no value for key " <> key)
-    KeyTaken(key:) ->
-      dream_errors.Conflict("the key " <> key <> " has a value", error)
-    StoreDown(reason:) ->
-      dream_errors.Unavailable("the store is down: " <> reason, error)
+    KeyMissing(key:) -> NotFound("no value for key " <> key)
+    KeyTaken(key:) -> Conflict("the key " <> key <> " has a value", error)
+    StoreDown(reason:) -> Unavailable("the store is down: " <> reason, error)
   }
 }

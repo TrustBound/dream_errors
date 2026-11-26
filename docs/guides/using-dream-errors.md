@@ -2,7 +2,7 @@
 
 `dream_errors.Error(cause)` is the shared error type of the Dream packages. Each package maps its own error to it, and keeps its own error as the `cause`. This guide tells what each variant means, how a package maps its error, and how an app uses it.
 
-## The shared error type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L37-L52"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
+## The shared error type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L50"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
 /// What went wrong, in terms every Dream package shares. `cause` is the
@@ -45,11 +45,11 @@ The `message` is text for developers and logs only. It can name tables, constrai
 ### Write a log line <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/test/snippets/log_line.gleam"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
-import dream_errors
+import dream_errors.{type Error, kind_name, message}
 
 /// One log line for an error, for developers.
-pub fn log_line(error: dream_errors.Error(cause)) -> String {
-  dream_errors.kind_name(error) <> ": " <> dream_errors.message(error)
+pub fn log_line(error: Error(cause)) -> String {
+  kind_name(error) <> ": " <> message(error)
 }
 ```
 
@@ -62,7 +62,7 @@ A package that returns `dream_errors.Error` keeps its own error type, and adds a
 ### Map a package error <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/test/snippets/to_error.gleam"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
-import dream_errors
+import dream_errors.{type Error, Conflict, NotFound, Unavailable}
 
 /// The error of a store package.
 pub type StoreError {
@@ -72,13 +72,11 @@ pub type StoreError {
 }
 
 /// Maps a store error to the shared error, with the store error as the cause.
-pub fn to_error(error: StoreError) -> dream_errors.Error(StoreError) {
+pub fn to_error(error: StoreError) -> Error(StoreError) {
   case error {
-    KeyMissing(key:) -> dream_errors.NotFound("no value for key " <> key)
-    KeyTaken(key:) ->
-      dream_errors.Conflict("the key " <> key <> " has a value", error)
-    StoreDown(reason:) ->
-      dream_errors.Unavailable("the store is down: " <> reason, error)
+    KeyMissing(key:) -> NotFound("no value for key " <> key)
+    KeyTaken(key:) -> Conflict("the key " <> key <> " has a value", error)
+    StoreDown(reason:) -> Unavailable("the store is down: " <> reason, error)
   }
 }
 ```
@@ -92,7 +90,7 @@ The `cause` of a store error is a `StoreError`, and the `cause` of another packa
 ### Put a store error into the app error <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/test/snippets/map_cause.gleam"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
-import dream_errors
+import dream_errors.{type Error, map_cause}
 import snippets/to_error.{type StoreError}
 
 /// The causes of the app: one variant for each package that the app uses.
@@ -102,10 +100,8 @@ pub type AppCause {
 }
 
 /// Puts a store error into the error type of the app.
-pub fn from_store(
-  error: dream_errors.Error(StoreError),
-) -> dream_errors.Error(AppCause) {
-  dream_errors.map_cause(error, Store)
+pub fn from_store(error: Error(StoreError)) -> Error(AppCause) {
+  map_cause(error, Store)
 }
 ```
 
@@ -118,20 +114,19 @@ Match on the variant to pick what the app does. The app writes its own text for 
 ### Answer with a status and your own text <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/test/snippets/answer.gleam"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
-import dream_errors
+import dream_errors.{
+  type Error, Conflict, Failed, Invalid, NotFound, Timeout, Unavailable,
+}
 
 /// The status code and the text that an app shows for a shared error.
 /// The text is the app's own text, never the message of the error.
-pub fn answer(error: dream_errors.Error(cause)) -> #(Int, String) {
+pub fn answer(error: Error(cause)) -> #(Int, String) {
   case error {
-    dream_errors.NotFound(..) -> #(404, "We could not find that.")
-    dream_errors.Conflict(..) -> #(409, "That exists already.")
-    dream_errors.Invalid(..) -> #(400, "Please check your input.")
-    dream_errors.Unavailable(..) | dream_errors.Timeout(..) -> #(
-      503,
-      "Please try again soon.",
-    )
-    dream_errors.Failed(..) -> #(500, "Something went wrong.")
+    NotFound(..) -> #(404, "We could not find that.")
+    Conflict(..) -> #(409, "That exists already.")
+    Invalid(..) -> #(400, "Please check your input.")
+    Unavailable(..) | Timeout(..) -> #(503, "Please try again soon.")
+    Failed(..) -> #(500, "Something went wrong.")
   }
 }
 ```
@@ -141,13 +136,13 @@ Match on the `cause` only when the app must tell one exact case apart, for examp
 ### Match one exact cause <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/test/snippets/exact_cause.gleam"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
-import dream_errors
+import dream_errors.{type Error, Conflict}
 import snippets/to_error.{type StoreError, KeyTaken}
 
 /// Whether an error is the clash of one exact key of the store.
-pub fn is_taken(error: dream_errors.Error(StoreError), key: String) -> Bool {
+pub fn is_taken(error: Error(StoreError), key: String) -> Bool {
   case error {
-    dream_errors.Conflict(cause: KeyTaken(key: taken), ..) -> taken == key
+    Conflict(cause: KeyTaken(key: taken), ..) -> taken == key
     _ -> False
   }
 }

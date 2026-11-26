@@ -41,7 +41,7 @@ gleam add dream_errors
 
 The type:
 
-### The shared error type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L37-L52"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a> <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/docs/guides/using-dream-errors.md#the-shared-error-type-"><img align="right" alt="Guide: Using dream_errors" title="Guide: Using dream_errors" src="https://img.shields.io/badge/%F0%9F%93%96_read-guide-blue.svg?style=flat-square"></a>
+### The shared error type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L50"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a> <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/docs/guides/using-dream-errors.md#the-shared-error-type-"><img align="right" alt="Guide: Using dream_errors" title="Guide: Using dream_errors" src="https://img.shields.io/badge/%F0%9F%93%96_read-guide-blue.svg?style=flat-square"></a>
 
 ```gleam
 /// What went wrong, in terms every Dream package shares. `cause` is the
@@ -69,7 +69,7 @@ A package maps its own error with a `to_error` function:
 ### Map a package error <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/test/snippets/to_error.gleam"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a> <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/docs/guides/using-dream-errors.md#map-a-package-error-"><img align="right" alt="Guide: Using dream_errors" title="Guide: Using dream_errors" src="https://img.shields.io/badge/%F0%9F%93%96_read-guide-blue.svg?style=flat-square"></a>
 
 ```gleam
-import dream_errors
+import dream_errors.{type Error, Conflict, NotFound, Unavailable}
 
 /// The error of a store package.
 pub type StoreError {
@@ -79,13 +79,11 @@ pub type StoreError {
 }
 
 /// Maps a store error to the shared error, with the store error as the cause.
-pub fn to_error(error: StoreError) -> dream_errors.Error(StoreError) {
+pub fn to_error(error: StoreError) -> Error(StoreError) {
   case error {
-    KeyMissing(key:) -> dream_errors.NotFound("no value for key " <> key)
-    KeyTaken(key:) ->
-      dream_errors.Conflict("the key " <> key <> " has a value", error)
-    StoreDown(reason:) ->
-      dream_errors.Unavailable("the store is down: " <> reason, error)
+    KeyMissing(key:) -> NotFound("no value for key " <> key)
+    KeyTaken(key:) -> Conflict("the key " <> key <> " has a value", error)
+    StoreDown(reason:) -> Unavailable("the store is down: " <> reason, error)
   }
 }
 ```
@@ -95,20 +93,19 @@ An app matches on the variant, and shows its own text:
 ### Answer with a status and your own text <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/test/snippets/answer.gleam"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a> <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/docs/guides/using-dream-errors.md#answer-with-a-status-and-your-own-text-"><img align="right" alt="Guide: Using dream_errors" title="Guide: Using dream_errors" src="https://img.shields.io/badge/%F0%9F%93%96_read-guide-blue.svg?style=flat-square"></a>
 
 ```gleam
-import dream_errors
+import dream_errors.{
+  type Error, Conflict, Failed, Invalid, NotFound, Timeout, Unavailable,
+}
 
 /// The status code and the text that an app shows for a shared error.
 /// The text is the app's own text, never the message of the error.
-pub fn answer(error: dream_errors.Error(cause)) -> #(Int, String) {
+pub fn answer(error: Error(cause)) -> #(Int, String) {
   case error {
-    dream_errors.NotFound(..) -> #(404, "We could not find that.")
-    dream_errors.Conflict(..) -> #(409, "That exists already.")
-    dream_errors.Invalid(..) -> #(400, "Please check your input.")
-    dream_errors.Unavailable(..) | dream_errors.Timeout(..) -> #(
-      503,
-      "Please try again soon.",
-    )
-    dream_errors.Failed(..) -> #(500, "Something went wrong.")
+    NotFound(..) -> #(404, "We could not find that.")
+    Conflict(..) -> #(409, "That exists already.")
+    Invalid(..) -> #(400, "Please check your input.")
+    Unavailable(..) | Timeout(..) -> #(503, "Please try again soon.")
+    Failed(..) -> #(500, "Something went wrong.")
   }
 }
 ```

@@ -15,7 +15,7 @@ This is the first release of dream_errors, the shared error type of the Dream pa
 
 ### The shared error type
 
-#### The type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L37-L52"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
+#### The type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L50"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
 /// What went wrong, in terms every Dream package shares. `cause` is the
@@ -45,7 +45,7 @@ A package adds a `to_error` function that maps each case of its own error to one
 #### Map a store error <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/test/snippets/to_error.gleam"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
-import dream_errors
+import dream_errors.{type Error, Conflict, NotFound, Unavailable}
 
 /// The error of a store package.
 pub type StoreError {
@@ -55,13 +55,11 @@ pub type StoreError {
 }
 
 /// Maps a store error to the shared error, with the store error as the cause.
-pub fn to_error(error: StoreError) -> dream_errors.Error(StoreError) {
+pub fn to_error(error: StoreError) -> Error(StoreError) {
   case error {
-    KeyMissing(key:) -> dream_errors.NotFound("no value for key " <> key)
-    KeyTaken(key:) ->
-      dream_errors.Conflict("the key " <> key <> " has a value", error)
-    StoreDown(reason:) ->
-      dream_errors.Unavailable("the store is down: " <> reason, error)
+    KeyMissing(key:) -> NotFound("no value for key " <> key)
+    KeyTaken(key:) -> Conflict("the key " <> key <> " has a value", error)
+    StoreDown(reason:) -> Unavailable("the store is down: " <> reason, error)
   }
 }
 ```

@@ -3,24 +3,28 @@
 
 import dream_errors/error_test
 import dream_errors/snippets_test
-import dream_test/coverage
+import dream_test/coverage.{
+  type CoverageConfig, json_path, minimum_percent, show_missing,
+}
 import dream_test/reporters/bdd
 import dream_test/reporters/progress
-import dream_test/runner
+import dream_test/runner.{
+  exit_on_failure, new, progress_reporter, results_reporters, run,
+}
 
 pub fn main() -> Nil {
-  runner.new([error_test.tests(), snippets_test.tests()])
-  |> runner.progress_reporter(progress.new())
-  |> runner.results_reporters([bdd.new()])
+  new([error_test.tests(), snippets_test.tests()])
+  |> progress_reporter(progress.new())
+  |> results_reporters([bdd.new()])
   |> runner.coverage(coverage_config())
-  |> runner.exit_on_failure()
-  |> runner.run()
+  |> exit_on_failure()
+  |> run()
   Nil
 }
 
-fn coverage_config() -> coverage.CoverageConfig {
+fn coverage_config() -> CoverageConfig {
   coverage.new()
-  |> coverage.show_missing()
-  |> coverage.json_path("build/coverage/coverage.json")
-  |> coverage.minimum_percent(100.0)
+  |> show_missing()
+  |> json_path("build/coverage/coverage.json")
+  |> minimum_percent(100.0)
 }

@@ -1,14 +1,15 @@
 //// Tests for the public API of `dream_errors`.
 
 import dream_errors.{
-  type Error, Conflict, Failed, Invalid, NotFound, Timeout, Unavailable,
+  type Error, Conflict, Failed, Invalid, NotFound, Timeout, Unavailable, cause,
+  kind_name, map_cause, message,
 }
 import dream_test/matchers.{be_equal, or_fail_with, should}
 import dream_test/suite.{type TestSuite}
-import dream_test/unit.{describe, group, it}
-import gleam/list
+import dream_test/unit.{type UnitNode, describe, group, it}
+import gleam/list.{map, zip}
 import gleam/option.{None, Some}
-import gleam/string
+import gleam/string.{inspect}
 
 /// One error of each variant, with the cause "the cause".
 fn each_variant() -> List(#(String, Error(String))) {
@@ -31,9 +32,9 @@ pub fn tests() -> TestSuite {
   ])
 }
 
-fn message_tests() -> List(unit.UnitNode) {
-  list.map(
-    list.zip(each_variant(), [
+fn message_tests() -> List(UnitNode) {
+  map(
+    zip(each_variant(), [
       "no user 7", "users_email_key", "email is empty", "connection refused",
       "no answer in 5000 ms", "syntax error",
     ]),
@@ -41,7 +42,7 @@ fn message_tests() -> List(unit.UnitNode) {
       let #(#(name, error), expected) = example
       it("gives the message of " <> name, fn() {
         // Act
-        let found = dream_errors.message(error)
+        let found = message(error)
 
         // Assert
         found
@@ -53,9 +54,9 @@ fn message_tests() -> List(unit.UnitNode) {
   )
 }
 
-fn cause_tests() -> List(unit.UnitNode) {
-  list.map(
-    list.zip(each_variant(), [
+fn cause_tests() -> List(UnitNode) {
+  map(
+    zip(each_variant(), [
       None,
       Some("the cause"),
       Some("the cause"),
@@ -65,23 +66,23 @@ fn cause_tests() -> List(unit.UnitNode) {
     ]),
     fn(example) {
       let #(#(name, error), expected) = example
-      it("gives " <> string.inspect(expected) <> " for " <> name, fn() {
+      it("gives " <> inspect(expected) <> " for " <> name, fn() {
         // Act
-        let found = dream_errors.cause(error)
+        let found = cause(error)
 
         // Assert
         found
         |> should
         |> be_equal(expected)
-        |> or_fail_with("Expected " <> string.inspect(expected))
+        |> or_fail_with("Expected " <> inspect(expected))
       })
     },
   )
 }
 
-fn map_cause_tests() -> List(unit.UnitNode) {
-  list.map(
-    list.zip(each_variant(), [
+fn map_cause_tests() -> List(UnitNode) {
+  map(
+    zip(each_variant(), [
       NotFound("no user 7"),
       Conflict("users_email_key", 9),
       Invalid("email is empty", 9),
@@ -96,28 +97,28 @@ fn map_cause_tests() -> List(unit.UnitNode) {
         let length = string.length
 
         // Act
-        let found = dream_errors.map_cause(error, length)
+        let found = map_cause(error, length)
 
         // Assert
         found
         |> should
         |> be_equal(expected)
-        |> or_fail_with("Expected " <> string.inspect(expected))
+        |> or_fail_with("Expected " <> inspect(expected))
       })
     },
   )
 }
 
-fn kind_name_tests() -> List(unit.UnitNode) {
-  list.map(
-    list.zip(each_variant(), [
+fn kind_name_tests() -> List(UnitNode) {
+  map(
+    zip(each_variant(), [
       "not_found", "conflict", "invalid", "unavailable", "timeout", "failed",
     ]),
     fn(example) {
       let #(#(name, error), expected) = example
       it("gives \"" <> expected <> "\" for " <> name, fn() {
         // Act
-        let found = dream_errors.kind_name(error)
+        let found = kind_name(error)
 
         // Assert
         found

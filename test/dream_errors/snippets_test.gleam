@@ -1,17 +1,19 @@
 //// Tests for the code of the docs: each file of `test/snippets` that the
 //// README, the guide and the doc comments show.
 
-import dream_errors.{Conflict, Failed, Invalid, NotFound, Timeout, Unavailable}
+import dream_errors.{
+  Conflict, Failed, Invalid, NotFound, Timeout, Unavailable, kind_name,
+}
 import dream_test/matchers.{be_equal, or_fail_with, should}
 import dream_test/suite.{type TestSuite}
-import dream_test/unit.{describe, group, it}
-import gleam/list
-import gleam/string
-import snippets/answer
-import snippets/exact_cause
-import snippets/log_line
-import snippets/map_cause.{Store}
-import snippets/to_error.{KeyMissing, KeyTaken, StoreDown}
+import dream_test/unit.{type UnitNode, describe, group, it}
+import gleam/list.{map}
+import gleam/string.{inspect}
+import snippets/answer.{answer}
+import snippets/exact_cause.{is_taken}
+import snippets/log_line.{log_line}
+import snippets/map_cause.{Store, from_store}
+import snippets/to_error.{KeyMissing, KeyTaken, StoreDown, to_error}
 
 pub fn tests() -> TestSuite {
   describe("the code of the docs", [
@@ -24,7 +26,7 @@ pub fn tests() -> TestSuite {
         let error = Unavailable("connection refused", Nil)
 
         // Act
-        let line = log_line.log_line(error)
+        let line = log_line(error)
 
         // Assert
         line
@@ -37,8 +39,8 @@ pub fn tests() -> TestSuite {
   ])
 }
 
-fn to_error_tests() -> List(unit.UnitNode) {
-  list.map(
+fn to_error_tests() -> List(UnitNode) {
+  map(
     [
       #(KeyMissing("a"), NotFound("no value for key a")),
       #(KeyTaken("a"), Conflict("the key a has a value", KeyTaken("a"))),
@@ -49,22 +51,22 @@ fn to_error_tests() -> List(unit.UnitNode) {
     ],
     fn(example) {
       let #(store_error, expected) = example
-      it("maps " <> string.inspect(store_error), fn() {
+      it("maps " <> inspect(store_error), fn() {
         // Act
-        let error = to_error.to_error(store_error)
+        let error = to_error(store_error)
 
         // Assert
         error
         |> should
         |> be_equal(expected)
-        |> or_fail_with("Expected " <> string.inspect(expected))
+        |> or_fail_with("Expected " <> inspect(expected))
       })
     },
   )
 }
 
-fn answer_tests() -> List(unit.UnitNode) {
-  list.map(
+fn answer_tests() -> List(UnitNode) {
+  map(
     [
       #(NotFound("no user 7"), #(404, "We could not find that.")),
       #(Conflict("users_email_key", Nil), #(409, "That exists already.")),
@@ -75,22 +77,22 @@ fn answer_tests() -> List(unit.UnitNode) {
     ],
     fn(example) {
       let #(error, expected) = example
-      it("answers " <> dream_errors.kind_name(error), fn() {
+      it("answers " <> kind_name(error), fn() {
         // Act
-        let found = answer.answer(error)
+        let found = answer(error)
 
         // Assert
         found
         |> should
         |> be_equal(expected)
-        |> or_fail_with("Expected " <> string.inspect(expected))
+        |> or_fail_with("Expected " <> inspect(expected))
       })
     },
   )
 }
 
-fn exact_cause_tests() -> List(unit.UnitNode) {
-  list.map(
+fn exact_cause_tests() -> List(UnitNode) {
+  map(
     [
       #("the same key", Conflict("taken", KeyTaken("a")), True),
       #("another key", Conflict("taken", KeyTaken("b")), False),
@@ -98,28 +100,28 @@ fn exact_cause_tests() -> List(unit.UnitNode) {
     ],
     fn(example) {
       let #(name, error, expected) = example
-      it("gives " <> string.inspect(expected) <> " for " <> name, fn() {
+      it("gives " <> inspect(expected) <> " for " <> name, fn() {
         // Act
-        let found = exact_cause.is_taken(error, "a")
+        let found = is_taken(error, "a")
 
         // Assert
         found
         |> should
         |> be_equal(expected)
-        |> or_fail_with("Expected " <> string.inspect(expected))
+        |> or_fail_with("Expected " <> inspect(expected))
       })
     },
   )
 }
 
-fn map_cause_tests() -> List(unit.UnitNode) {
+fn map_cause_tests() -> List(UnitNode) {
   [
     it("puts the store error into Store", fn() {
       // Arrange
       let error = Conflict("the key a has a value", KeyTaken("a"))
 
       // Act
-      let found = map_cause.from_store(error)
+      let found = from_store(error)
 
       // Assert
       found
@@ -132,7 +134,7 @@ fn map_cause_tests() -> List(unit.UnitNode) {
       let error = NotFound("no value for key a")
 
       // Act
-      let found = map_cause.from_store(error)
+      let found = from_store(error)
 
       // Assert
       found
