@@ -1,0 +1,26 @@
+name = "dream_errors"
+version = "1.0.0"
+description = "The shared error type of the Dream ecosystem"
+licences = ["MIT"]
+gleam = ">= 1.19.2"
+repository = { type = "github", user = "TrustBound", repo = "dream_errors" }
+links = [
+    { title = "Documentation", href = "https://hexdocs.pm/dream_errors" },
+    { title = "GitHub", href = "https://github.com/TrustBound/dream_errors" },
+]
+
+[documentation]
+pages = [
+    { title = "Using dream_errors", path = "guides/using-dream-errors.html", source = "./docs/guides/using-dream-errors.md" },
+]
+
+[dependencies]
+gleam_stdlib = ">= 1.0.0 and < 2.0.0"
+
+[dev-dependencies]
+dream_test = ">= 3.0.0 and < 4.0.0"
+dream_snippets = ">= 1.0.0 and < 2.0.0"
+
+[tools.dream_snippets]
+checked_from_version = "1.0.0"
+tested_files = ["test", ".github", "gleam.toml", "Makefile"]
