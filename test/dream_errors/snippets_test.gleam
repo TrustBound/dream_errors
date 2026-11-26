@@ -9,11 +9,11 @@ import dream_test/suite.{type TestSuite}
 import dream_test/unit.{type UnitNode, describe, group, it}
 import gleam/list.{map}
 import gleam/string.{inspect}
-import snippets/answer.{answer}
+import snippets/answer
 import snippets/exact_cause.{is_taken}
-import snippets/log_line.{log_line}
+import snippets/log_line
 import snippets/map_cause.{Store, from_store}
-import snippets/to_error.{KeyMissing, KeyTaken, StoreDown, to_error}
+import snippets/to_error.{KeyMissing, KeyTaken, StoreDown}
 
 pub fn tests() -> TestSuite {
   describe("the code of the docs", [
@@ -26,7 +26,7 @@ pub fn tests() -> TestSuite {
         let error = Unavailable("connection refused", Nil)
 
         // Act
-        let line = log_line(error)
+        let line = log_line.log_line(error)
 
         // Assert
         line
@@ -53,7 +53,7 @@ fn to_error_tests() -> List(UnitNode) {
       let #(store_error, expected) = example
       it("maps " <> inspect(store_error), fn() {
         // Act
-        let error = to_error(store_error)
+        let error = to_error.to_error(store_error)
 
         // Assert
         error
@@ -79,7 +79,7 @@ fn answer_tests() -> List(UnitNode) {
       let #(error, expected) = example
       it("answers " <> kind_name(error), fn() {
         // Act
-        let found = answer(error)
+        let found = answer.answer(error)
 
         // Assert
         found

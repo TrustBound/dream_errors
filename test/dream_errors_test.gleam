@@ -9,11 +9,11 @@ import dream_test/coverage.{
 import dream_test/reporters/bdd
 import dream_test/reporters/progress
 import dream_test/runner.{
-  exit_on_failure, new, progress_reporter, results_reporters, run,
+  exit_on_failure, progress_reporter, results_reporters, run,
 }
 
 pub fn main() -> Nil {
-  new([error_test.tests(), snippets_test.tests()])
+  runner.new([error_test.tests(), snippets_test.tests()])
   |> progress_reporter(progress.new())
   |> results_reporters([bdd.new()])
   |> runner.coverage(coverage_config())
