@@ -1,4 +1,4 @@
-# Using dream_errors
+# Using Dream Errors
 
 `dream_errors.Error(cause)` is the shared error type of the Dream packages. Each package maps its own error to it, and keeps its own error as the `cause`. This guide tells what each variant means, how a package maps its error, and how an app uses it.
 
