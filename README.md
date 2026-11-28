@@ -127,7 +127,9 @@ In a Dream app, `error.from_shared` of Dream 3.0.0 gives the HTTP status of the 
 
 ## About Dream
 
-dream_errors is part of [Dream](https://github.com/TrustBound/dream), a web toolkit for Gleam. It is built with the same quality standards as Dream.
+[Dream](https://github.com/TrustBound/dream) is a collection of Gleam packages for building production web applications. Each package implements its standards completely, shares the same naming and style as the others, and is fully tested. TrustBound builds Dream for its own production systems and shares it in the hope that it helps yours.
+
+dream_errors works on its own. You don't need the rest of Dream to use it.
 
 ## Contributing
 
