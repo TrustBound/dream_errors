@@ -1,6 +1,6 @@
 # dream_errors 1.0.0 Release Notes
 
-**Release Date:** Unreleased
+**Release Date:** 2026-11-28
 
 This is the first release of dream_errors, the shared error type of the Dream packages. Each package maps its own error to `dream_errors.Error(cause)`, and keeps its own error whole as the `cause`. An app matches on one type for every package.
 
