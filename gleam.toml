@@ -1,6 +1,6 @@
 name = "dream_errors"
 version = "1.0.0"
-description = "The shared error type of the Dream ecosystem"
+description = "One error type for every Dream package"
 licences = ["MIT"]
 gleam = ">= 1.19.2"
 repository = { type = "github", user = "TrustBound", repo = "dream_errors" }
