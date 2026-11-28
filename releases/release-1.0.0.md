@@ -6,7 +6,7 @@ This is the first release of dream_errors, the shared error type of the Dream pa
 
 ## Key Highlights
 
-- **Six shared variants**: `NotFound`, `Conflict`, `Invalid`, `Unavailable`, `Timeout` and `Failed`
+- **Seven shared variants**: `NotFound`, `Retry`, `Conflict`, `Invalid`, `Unavailable`, `Timeout` and `Failed`
 - **A typed cause**: the package's own error, for logs and for exact matches
 - **Four helpers**: `message`, `cause`, `map_cause` and `kind_name`
 - **No dependencies** other than `gleam_stdlib`
@@ -15,7 +15,7 @@ This is the first release of dream_errors, the shared error type of the Dream pa
 
 ### The shared error type
 
-#### The type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L50"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
+#### The type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L54"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
 /// What went wrong, in terms every Dream package shares. `cause` is the
@@ -23,6 +23,10 @@ This is the first release of dream_errors, the shared error type of the Dream pa
 pub type Error(cause) {
   /// The thing asked for does not exist. Absence is a result, not a fault, so it has no cause.
   NotFound(message: String)
+  /// Nothing happened, and running the whole operation again can succeed (a deadlock, a serialization failure).
+  /// `after_seconds` is the delay in seconds before the next try: `Some(n)` when the source knows it, else `None`.
+  /// A delay is zero or more. Dream sends no `retry-after` header for `None` or for a negative delay.
+  Retry(message: String, cause: cause, after_seconds: Option(Int))
   /// The write clashes with existing state (unique key, existing table).
   Conflict(message: String, cause: cause)
   /// The caller's input broke a rule.

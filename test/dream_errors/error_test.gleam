@@ -1,8 +1,8 @@
 //// Tests for the public API of `dream_errors`.
 
 import dream_errors.{
-  type Error, Conflict, Failed, Invalid, NotFound, Timeout, Unavailable, cause,
-  kind_name, map_cause, message,
+  type Error, Conflict, Failed, Invalid, NotFound, Retry, Timeout, Unavailable,
+  cause, kind_name, map_cause, message,
 }
 import dream_test/matchers.{be_equal, or_fail_with, should}
 import dream_test/suite.{type TestSuite}
@@ -15,6 +15,7 @@ import gleam/string.{inspect}
 fn each_variant() -> List(#(String, Error(String))) {
   [
     #("NotFound", NotFound("no user 7")),
+    #("Retry", Retry("deadlock detected", "the cause", Some(30))),
     #("Conflict", Conflict("users_email_key", "the cause")),
     #("Invalid", Invalid("email is empty", "the cause")),
     #("Unavailable", Unavailable("connection refused", "the cause")),
@@ -35,8 +36,8 @@ pub fn tests() -> TestSuite {
 fn message_tests() -> List(UnitNode) {
   map(
     zip(each_variant(), [
-      "no user 7", "users_email_key", "email is empty", "connection refused",
-      "no answer in 5000 ms", "syntax error",
+      "no user 7", "deadlock detected", "users_email_key", "email is empty",
+      "connection refused", "no answer in 5000 ms", "syntax error",
     ]),
     fn(example) {
       let #(#(name, error), expected) = example
@@ -63,6 +64,7 @@ fn cause_tests() -> List(UnitNode) {
       Some("the cause"),
       Some("the cause"),
       Some("the cause"),
+      Some("the cause"),
     ]),
     fn(example) {
       let #(#(name, error), expected) = example
@@ -84,6 +86,7 @@ fn map_cause_tests() -> List(UnitNode) {
   map(
     zip(each_variant(), [
       NotFound("no user 7"),
+      Retry("deadlock detected", 9, Some(30)),
       Conflict("users_email_key", 9),
       Invalid("email is empty", 9),
       Unavailable("connection refused", 9),
@@ -112,7 +115,8 @@ fn map_cause_tests() -> List(UnitNode) {
 fn kind_name_tests() -> List(UnitNode) {
   map(
     zip(each_variant(), [
-      "not_found", "conflict", "invalid", "unavailable", "timeout", "failed",
+      "not_found", "retry", "conflict", "invalid", "unavailable", "timeout",
+      "failed",
     ]),
     fn(example) {
       let #(#(name, error), expected) = example

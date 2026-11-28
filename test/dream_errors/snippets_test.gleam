@@ -2,12 +2,13 @@
 //// README, the guide and the doc comments show.
 
 import dream_errors.{
-  Conflict, Failed, Invalid, NotFound, Timeout, Unavailable, kind_name,
+  Conflict, Failed, Invalid, NotFound, Retry, Timeout, Unavailable, kind_name,
 }
 import dream_test/matchers.{be_equal, or_fail_with, should}
 import dream_test/suite.{type TestSuite}
 import dream_test/unit.{type UnitNode, describe, group, it}
 import gleam/list.{map}
+import gleam/option.{None}
 import gleam/string.{inspect}
 import snippets/answer
 import snippets/exact_cause.{is_taken}
@@ -69,6 +70,7 @@ fn answer_tests() -> List(UnitNode) {
   map(
     [
       #(NotFound("no user 7"), #(404, "We could not find that.")),
+      #(Retry("deadlock detected", Nil, None), #(503, "Please try again.")),
       #(Conflict("users_email_key", Nil), #(409, "That exists already.")),
       #(Invalid("email is empty", Nil), #(400, "Please check your input.")),
       #(Unavailable("refused", Nil), #(503, "Please try again soon.")),

@@ -1,5 +1,5 @@
 import dream_errors.{
-  type Error, Conflict, Failed, Invalid, NotFound, Timeout, Unavailable,
+  type Error, Conflict, Failed, Invalid, NotFound, Retry, Timeout, Unavailable,
 }
 
 /// The status code and the text that an app shows for a shared error.
@@ -7,6 +7,7 @@ import dream_errors.{
 pub fn answer(error: Error(cause)) -> #(Int, String) {
   case error {
     NotFound(..) -> #(404, "We could not find that.")
+    Retry(..) -> #(503, "Please try again.")
     Conflict(..) -> #(409, "That exists already.")
     Invalid(..) -> #(400, "Please check your input.")
     Unavailable(..) | Timeout(..) -> #(503, "Please try again soon.")
