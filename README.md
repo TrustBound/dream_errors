@@ -26,7 +26,7 @@ dream_errors depends only on the Gleam standard library.
 
 ## Features
 
-- ✅ Six variants that every package shares: `NotFound`, `Conflict`, `Invalid`, `Unavailable`, `Timeout` and `Failed`
+- ✅ Seven variants that every package shares: `NotFound`, `Retry`, `Conflict`, `Invalid`, `Unavailable`, `Timeout` and `Failed`
 - ✅ The package's own error as a typed `cause`, for logs and for exact matches
 - ✅ `message`, `cause`, `map_cause` and `kind_name`
 - ✅ No dependencies other than `gleam_stdlib`
@@ -41,7 +41,7 @@ gleam add dream_errors
 
 The type:
 
-### The shared error type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L50"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a> <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/docs/guides/using-dream-errors.md#the-shared-error-type-"><img align="right" alt="Guide: Using dream_errors" title="Guide: Using dream_errors" src="https://img.shields.io/badge/%F0%9F%93%96_read-guide-blue.svg?style=flat-square"></a>
+### The shared error type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L54"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a> <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/docs/guides/using-dream-errors.md#the-shared-error-type-"><img align="right" alt="Guide: Using dream_errors" title="Guide: Using dream_errors" src="https://img.shields.io/badge/%F0%9F%93%96_read-guide-blue.svg?style=flat-square"></a>
 
 ```gleam
 /// What went wrong, in terms every Dream package shares. `cause` is the
@@ -49,6 +49,10 @@ The type:
 pub type Error(cause) {
   /// The thing asked for does not exist. Absence is a result, not a fault, so it has no cause.
   NotFound(message: String)
+  /// Nothing happened, and running the whole operation again can succeed (a deadlock, a serialization failure).
+  /// `after_seconds` is the delay in seconds before the next try: `Some(n)` when the source knows it, else `None`.
+  /// A delay is zero or more. Dream sends no `retry-after` header for `None` or for a negative delay.
+  Retry(message: String, cause: cause, after_seconds: Option(Int))
   /// The write clashes with existing state (unique key, existing table).
   Conflict(message: String, cause: cause)
   /// The caller's input broke a rule.
@@ -94,7 +98,7 @@ An app matches on the variant, and shows its own text:
 
 ```gleam
 import dream_errors.{
-  type Error, Conflict, Failed, Invalid, NotFound, Timeout, Unavailable,
+  type Error, Conflict, Failed, Invalid, NotFound, Retry, Timeout, Unavailable,
 }
 
 /// The status code and the text that an app shows for a shared error.
@@ -102,6 +106,7 @@ import dream_errors.{
 pub fn answer(error: Error(cause)) -> #(Int, String) {
   case error {
     NotFound(..) -> #(404, "We could not find that.")
+    Retry(..) -> #(503, "Please try again.")
     Conflict(..) -> #(409, "That exists already.")
     Invalid(..) -> #(400, "Please check your input.")
     Unavailable(..) | Timeout(..) -> #(503, "Please try again soon.")

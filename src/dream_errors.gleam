@@ -37,6 +37,10 @@ import gleam/option.{type Option, None, Some}
 pub type Error(cause) {
   /// The thing asked for does not exist. Absence is a result, not a fault, so it has no cause.
   NotFound(message: String)
+  /// Nothing happened, and running the whole operation again can succeed (a deadlock, a serialization failure).
+  /// `after_seconds` is the delay in seconds before the next try: `Some(n)` when the source knows it, else `None`.
+  /// A delay is zero or more. Dream sends no `retry-after` header for `None` or for a negative delay.
+  Retry(message: String, cause: cause, after_seconds: Option(Int))
   /// The write clashes with existing state (unique key, existing table).
   Conflict(message: String, cause: cause)
   /// The caller's input broke a rule.
@@ -59,7 +63,8 @@ pub fn message(error: Error(cause)) -> String {
 pub fn cause(error: Error(cause)) -> Option(cause) {
   case error {
     NotFound(..) -> None
-    Conflict(cause:, ..)
+    Retry(cause:, ..)
+    | Conflict(cause:, ..)
     | Invalid(cause:, ..)
     | Unavailable(cause:, ..)
     | Timeout(cause:, ..)
@@ -67,11 +72,14 @@ pub fn cause(error: Error(cause)) -> Option(cause) {
   }
 }
 
-/// Changes the cause of an error with `with`, and keeps the variant and
-/// the message. A `NotFound` stays the same, because it has no cause.
+/// Changes the cause of an error with `with`, and keeps the variant, the
+/// message and the `after_seconds` of a `Retry`. A `NotFound` stays the
+/// same, because it has no cause.
 pub fn map_cause(error: Error(a), with: fn(a) -> b) -> Error(b) {
   case error {
     NotFound(message:) -> NotFound(message:)
+    Retry(message:, cause:, after_seconds:) ->
+      Retry(message:, cause: with(cause), after_seconds:)
     Conflict(message:, cause:) -> Conflict(message:, cause: with(cause))
     Invalid(message:, cause:) -> Invalid(message:, cause: with(cause))
     Unavailable(message:, cause:) -> Unavailable(message:, cause: with(cause))
@@ -81,11 +89,12 @@ pub fn map_cause(error: Error(a), with: fn(a) -> b) -> Error(b) {
 }
 
 /// The name of the variant in snake case, for logs and metrics:
-/// `"not_found"`, `"conflict"`, `"invalid"`, `"unavailable"`, `"timeout"`
-/// or `"failed"`.
+/// `"not_found"`, `"retry"`, `"conflict"`, `"invalid"`, `"unavailable"`,
+/// `"timeout"` or `"failed"`.
 pub fn kind_name(error: Error(cause)) -> String {
   case error {
     NotFound(..) -> "not_found"
+    Retry(..) -> "retry"
     Conflict(..) -> "conflict"
     Invalid(..) -> "invalid"
     Unavailable(..) -> "unavailable"

@@ -2,7 +2,7 @@
 
 `dream_errors.Error(cause)` is the shared error type of the Dream packages. Each package maps its own error to it, and keeps its own error as the `cause`. This guide tells what each variant means, how a package maps its error, and how an app uses it.
 
-## The shared error type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L50"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
+## The shared error type <a href="https://github.com/TrustBound/dream_errors/blob/1.0.0/src/dream_errors.gleam#L35-L54"><img align="right" alt="Tested snippet" src="https://img.shields.io/badge/%F0%9F%A7%AA_tested-snippet-lightgreen.svg?style=flat-square"></a>
 
 ```gleam
 /// What went wrong, in terms every Dream package shares. `cause` is the
@@ -10,6 +10,10 @@
 pub type Error(cause) {
   /// The thing asked for does not exist. Absence is a result, not a fault, so it has no cause.
   NotFound(message: String)
+  /// Nothing happened, and running the whole operation again can succeed (a deadlock, a serialization failure).
+  /// `after_seconds` is the delay in seconds before the next try: `Some(n)` when the source knows it, else `None`.
+  /// A delay is zero or more. Dream sends no `retry-after` header for `None` or for a negative delay.
+  Retry(message: String, cause: cause, after_seconds: Option(Int))
   /// The write clashes with existing state (unique key, existing table).
   Conflict(message: String, cause: cause)
   /// The caller's input broke a rule.
@@ -28,6 +32,7 @@ pub type Error(cause) {
 | Variant | Meaning | A package uses it when | Cause |
 | --- | --- | --- | --- |
 | `NotFound` | The thing asked for does not exist. | A query finds no row, a key has no value, a server answers 404. | None. Absence is a result, not a fault. |
+| `Retry` | Nothing happened, and running the whole operation again can succeed. `after_seconds` is the delay before the next try, or `None` when the source does not know it. | A database rolls a transaction back for a deadlock or a serialization failure (`None`). A server answers 503 or 429 with a `retry-after` delay (`Some(n)`). | The error of the package. |
 | `Conflict` | The write clashes with existing state. | A unique key is taken, a table exists already, a version check fails. | The error of the package. |
 | `Invalid` | The input of the caller broke a rule. | A value is out of range, a check constraint fails, a request is malformed. | The error of the package. |
 | `Unavailable` | A dependency could not be reached. | A connection is refused, the pool is empty, a host does not resolve. | The error of the package. |
@@ -115,7 +120,7 @@ Match on the variant to pick what the app does. The app writes its own text for 
 
 ```gleam
 import dream_errors.{
-  type Error, Conflict, Failed, Invalid, NotFound, Timeout, Unavailable,
+  type Error, Conflict, Failed, Invalid, NotFound, Retry, Timeout, Unavailable,
 }
 
 /// The status code and the text that an app shows for a shared error.
@@ -123,6 +128,7 @@ import dream_errors.{
 pub fn answer(error: Error(cause)) -> #(Int, String) {
   case error {
     NotFound(..) -> #(404, "We could not find that.")
+    Retry(..) -> #(503, "Please try again.")
     Conflict(..) -> #(409, "That exists already.")
     Invalid(..) -> #(400, "Please check your input.")
     Unavailable(..) | Timeout(..) -> #(503, "Please try again soon.")
