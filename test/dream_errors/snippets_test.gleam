@@ -2,14 +2,12 @@
 //// README, the guide and the doc comments show.
 
 import dream_errors.{
-  Conflict, Failed, Invalid, NotFound, Retry, Timeout, Unavailable, kind_name,
+  Conflict, Failed, Invalid, NotFound, Retry, Timeout, Unavailable,
 }
 import dream_test/matchers.{be_equal, or_fail_with, should}
 import dream_test/suite.{type TestSuite}
 import dream_test/unit.{type UnitNode, describe, group, it}
-import gleam/list.{map}
 import gleam/option.{None}
-import gleam/string.{inspect}
 import snippets/answer
 import snippets/exact_cause.{is_taken}
 import snippets/log_line
@@ -41,79 +39,191 @@ pub fn tests() -> TestSuite {
 }
 
 fn to_error_tests() -> List(UnitNode) {
-  map(
-    [
-      #(KeyMissing("a"), NotFound("no value for key a")),
-      #(KeyTaken("a"), Conflict("the key a has a value", KeyTaken("a"))),
-      #(
-        StoreDown("closed"),
-        Unavailable("the store is down: closed", StoreDown("closed")),
-      ),
-    ],
-    fn(example) {
-      let #(store_error, expected) = example
-      it("maps " <> inspect(store_error), fn() {
-        // Act
-        let error = to_error.to_error(store_error)
+  [
+    it("maps a missing key to NotFound", fn() {
+      // Arrange
+      let store_error = KeyMissing("a")
 
-        // Assert
-        error
-        |> should
-        |> be_equal(expected)
-        |> or_fail_with("Expected " <> inspect(expected))
-      })
-    },
-  )
+      // Act
+      let found = to_error.to_error(store_error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(NotFound("no value for key a"))
+      |> or_fail_with("Expected NotFound(\"no value for key a\")")
+    }),
+    it("maps a taken key to Conflict", fn() {
+      // Arrange
+      let store_error = KeyTaken("a")
+
+      // Act
+      let found = to_error.to_error(store_error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(Conflict("the key a has a value", KeyTaken("a")))
+      |> or_fail_with(
+        "Expected Conflict(\"the key a has a value\", KeyTaken(\"a\"))",
+      )
+    }),
+    it("maps a store that is down to Unavailable", fn() {
+      // Arrange
+      let store_error = StoreDown("closed")
+
+      // Act
+      let found = to_error.to_error(store_error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(Unavailable("the store is down: closed", StoreDown("closed")))
+      |> or_fail_with(
+        "Expected Unavailable(\"the store is down: closed\", StoreDown(\"closed\"))",
+      )
+    }),
+  ]
 }
 
 fn answer_tests() -> List(UnitNode) {
-  map(
-    [
-      #(NotFound("no user 7"), #(404, "We could not find that.")),
-      #(Retry("deadlock detected", Nil, None), #(503, "Please try again.")),
-      #(Conflict("users_email_key", Nil), #(409, "That exists already.")),
-      #(Invalid("email is empty", Nil), #(400, "Please check your input.")),
-      #(Unavailable("refused", Nil), #(503, "Please try again soon.")),
-      #(Timeout("no answer", Nil), #(503, "Please try again soon.")),
-      #(Failed("syntax error", Nil), #(500, "Something went wrong.")),
-    ],
-    fn(example) {
-      let #(error, expected) = example
-      it("answers " <> kind_name(error), fn() {
-        // Act
-        let found = answer.answer(error)
+  [
+    it("answers a NotFound with 404", fn() {
+      // Arrange
+      let error = NotFound("no user 7")
 
-        // Assert
-        found
-        |> should
-        |> be_equal(expected)
-        |> or_fail_with("Expected " <> inspect(expected))
-      })
-    },
-  )
+      // Act
+      let found = answer.answer(error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(#(404, "We could not find that."))
+      |> or_fail_with("Expected #(404, \"We could not find that.\")")
+    }),
+    it("answers a Retry with 503", fn() {
+      // Arrange
+      let error = Retry("deadlock detected", Nil, None)
+
+      // Act
+      let found = answer.answer(error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(#(503, "Please try again."))
+      |> or_fail_with("Expected #(503, \"Please try again.\")")
+    }),
+    it("answers a Conflict with 409", fn() {
+      // Arrange
+      let error = Conflict("users_email_key", Nil)
+
+      // Act
+      let found = answer.answer(error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(#(409, "That exists already."))
+      |> or_fail_with("Expected #(409, \"That exists already.\")")
+    }),
+    it("answers an Invalid with 400", fn() {
+      // Arrange
+      let error = Invalid("email is empty", Nil)
+
+      // Act
+      let found = answer.answer(error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(#(400, "Please check your input."))
+      |> or_fail_with("Expected #(400, \"Please check your input.\")")
+    }),
+    it("answers an Unavailable with 503", fn() {
+      // Arrange
+      let error = Unavailable("refused", Nil)
+
+      // Act
+      let found = answer.answer(error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(#(503, "Please try again soon."))
+      |> or_fail_with("Expected #(503, \"Please try again soon.\")")
+    }),
+    it("answers a Timeout with 503", fn() {
+      // Arrange
+      let error = Timeout("no answer", Nil)
+
+      // Act
+      let found = answer.answer(error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(#(503, "Please try again soon."))
+      |> or_fail_with("Expected #(503, \"Please try again soon.\")")
+    }),
+    it("answers a Failed with 500", fn() {
+      // Arrange
+      let error = Failed("syntax error", Nil)
+
+      // Act
+      let found = answer.answer(error)
+
+      // Assert
+      found
+      |> should
+      |> be_equal(#(500, "Something went wrong."))
+      |> or_fail_with("Expected #(500, \"Something went wrong.\")")
+    }),
+  ]
 }
 
 fn exact_cause_tests() -> List(UnitNode) {
-  map(
-    [
-      #("the same key", Conflict("taken", KeyTaken("a")), True),
-      #("another key", Conflict("taken", KeyTaken("b")), False),
-      #("another variant", NotFound("no value for key a"), False),
-    ],
-    fn(example) {
-      let #(name, error, expected) = example
-      it("gives " <> inspect(expected) <> " for " <> name, fn() {
-        // Act
-        let found = is_taken(error, "a")
+  [
+    it("gives True for a Conflict of the same key", fn() {
+      // Arrange
+      let error = Conflict("taken", KeyTaken("a"))
 
-        // Assert
-        found
-        |> should
-        |> be_equal(expected)
-        |> or_fail_with("Expected " <> inspect(expected))
-      })
-    },
-  )
+      // Act
+      let found = is_taken(error, "a")
+
+      // Assert
+      found
+      |> should
+      |> be_equal(True)
+      |> or_fail_with("Expected True")
+    }),
+    it("gives False for a Conflict of another key", fn() {
+      // Arrange
+      let error = Conflict("taken", KeyTaken("b"))
+
+      // Act
+      let found = is_taken(error, "a")
+
+      // Assert
+      found
+      |> should
+      |> be_equal(False)
+      |> or_fail_with("Expected False")
+    }),
+    it("gives False for another variant", fn() {
+      // Arrange
+      let error = NotFound("no value for key a")
+
+      // Act
+      let found = is_taken(error, "a")
+
+      // Assert
+      found
+      |> should
+      |> be_equal(False)
+      |> or_fail_with("Expected False")
+    }),
+  ]
 }
 
 fn map_cause_tests() -> List(UnitNode) {
