@@ -20,7 +20,7 @@
 
 ## What is Dream Errors?
 
-Dream Errors is the one error type that every Dream package returns. Each package maps its own error to seven shared variants and keeps the original as a typed `cause`, so your app matches on one type for every package, and your logs still get the exact error. It depends only on the Gleam standard library.
+Dream Errors gives every Dream package one shared way to fail. Whether a problem comes from the database, the network or a cache, your app handles it in one place, with one set of answers. Nothing is lost along the way: the original error stays attached, so your logs still show exactly what went wrong. It's small, it has no dependencies, and every Dream package speaks it.
 
 ## Features
 
